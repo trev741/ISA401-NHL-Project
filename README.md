@@ -1,10 +1,21 @@
-# NHL 10 - Year Statistics and Playoff Success Model
+# NHL Analytics and Playoff Success
 
 ---
 
-**Course:** ISA 401 B | Miami University  
-**Creators:** Trevor Leonard, Mike Pohrte & AJ Palmer  
-**Date:** May 12, 2026  
+**Course:** ISA 401 | Miami University  
+**Team Number:** 9                                                  
+**Authors:** Trevor Leonard, Mike Pohrte & AJ Palmer  
+**Date:** May 10th, 2026  
+
+---
+
+### Deliverables
+
+1. GitHub Repository: https://github.com/trev741/ISA401-NHL-Project
+
+2. Tableau Public Dashboard: https://public.tableau.com/app/profile/trevor.leonard/viz/ISA401FinalTableau/NHLAnalyticsStoryboard-ISA401
+
+3. Technical Presentation: https://youtu.be/eQH_RjyFNWQ
 
 ---
 
@@ -30,8 +41,8 @@
 - Load the `ISA401DataFile.rmd` 
 - Install all packages from `Step 0` if not already installed
 - Run `Step 0`
-- Run `Step 1`: You will see a CSV file named `NHL10yrFinalAdvancedStats.csv` in your files if done correctly
-- For the visualizations, run the 4 R Chunks in `Step 2`
+- Run `Step 1`: You will see a CSV file named `NHL10yrFinalAdvancedStats.csv` in your files if done correctly or you can pull the csv file from the GitHub Repository
+- (Can stop here if needed): For the visualizations, run the 4 R Chunks in `Step 2`
 
 ---
 
@@ -39,14 +50,15 @@
 
 - **Real Life Data**: Cleaned and standard data for 10 years in the NHL
 - **Interactive Data Table**: Sort, filter, and export results
+- **Web Scraping**: Pulled data from Wikipedia through web scraping
+- **Audited Data**: We picked 20 random teams and seasons from 2014-2023 and we fact checked them through the ESPN website to ensure our data table is fully up to date
 
 ---
 
 ## Technology Stack
 
 - **[Tableau](https://www.tableau.com/)** - Software for our visualizations
-- **[mlbplotR](https://camdenk.github.io/mlbplotR/articles/mlbplotR.html)** - R visualization for teams
-- **[Technical Presentation](https://youtu.be/eQH_RjyFNWQ)** - Technical presentation as an unlisted link
+- **[GitHub](https://github.com/)** - Repository for all of our important public data
 
 ---
 
@@ -57,7 +69,10 @@ to help students explore and understand NHL advanced data more clearly.
 
 ---
 
-## Data Source(s)
+## Data Sources
+
+ESPN. NHL Standings | Team Standings Data
+Data | https://www.espn.com/nhl/standings
 
 NHL API. Team Summary Statistics (Regular Season & Playoffs) | 2014–2024 Seasons
 Data | https://api.nhle.com/stats/rest/en/team/summary
@@ -66,4 +81,5 @@ Wikipedia. List of National Hockey League Arenas | Infrastructure Data
 Data | https://en.wikipedia.org/wiki/List_of_National_Hockey_League_arenas
 
 ---
+
 

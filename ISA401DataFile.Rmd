@@ -101,6 +101,10 @@ tableau_output <- reg_stats %>%
 # Export the CSV file to working directory
 write.csv(tableau_output, "NHL10yrFinalAdvancedStats.csv", row.names = FALSE)
 
+# Summary and data.frame
+summary(tableau_output)
+head(tableau_output)
+
 ```
 
 
