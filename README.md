@@ -48,8 +48,8 @@
 
 ## Features
 
-- **Real Life Data**: Cleaned and standard data for 10 years in the NHL
-- **Interactive Data Table**: Sort, filter, and export results
+- **Real Life Data**: Cleaned and standard authentic data for 10 years in the NHL
+- **API Extraction**: Utilized public NHL API for pulling hockey data
 - **Web Scraping**: Pulled data from Wikipedia through web scraping
 - **Audited Data**: We picked 20 random teams and seasons from 2014-2023 and we fact checked them through the ESPN website to ensure our data table is fully up to date
 
