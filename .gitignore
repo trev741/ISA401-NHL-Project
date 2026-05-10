@@ -1,0 +1,11 @@
+# Work space
+.RData
+.Rhistory
+.Rapp.history
+
+# R files
+.Rproj.user/
+
+# OS files
+.DS_Store
+Thumbs.db

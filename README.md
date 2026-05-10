@@ -1,4 +1,4 @@
-# NHL 10 - Year Statistics and Playoff Success
+# NHL 10 - Year Statistics and Playoff Success Model
 
 ---
 
@@ -25,6 +25,15 @@
 
 ---
 
+## Instructions 
+
+- Load the `ISA401DataFile.rmd` 
+- Install all packages from `Step 0` if not already installed
+- Run `Step 0`
+- Run `Step 1`: You will see a CSV file named `NHL10yrFinalAdvancedStats.csv` in your files if done correctly
+- For the visualizations, run the 4 R Chunks in `Step 2`
+
+---
 
 ## Features
 
@@ -37,6 +46,7 @@
 
 - **[Tableau](https://www.tableau.com/)** - Software for our visualizations
 - **[mlbplotR](https://camdenk.github.io/mlbplotR/articles/mlbplotR.html)** - R visualization for teams
+- **[Technical Presentation](https://youtu.be/eQH_RjyFNWQ)** - Technical presentation as an unlisted link
 
 ---
 

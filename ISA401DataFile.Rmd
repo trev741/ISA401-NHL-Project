@@ -1,0 +1,320 @@
+---
+title: "ISA401NewFinalProject"
+author: "Trevor Leonard, Mike Pohrte & AJ Palmer"
+date: "2026-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Step 0 - Get packages - *Install packages if not already done*
+
+```{r}
+
+library(httr)
+library(jsonlite)
+library(rvest)
+library(dplyr)
+library(purrr)
+library(ggpath)
+library(hockeyR)
+library(ggplot2)
+
+
+```
+
+
+
+
+# Step 1 - API Extraction and Webscrape - CSV File Creation
+
+```{r}
+
+# 1. API EXTRACTION 
+seasons <- paste0(2014:2023, 2015:2024)
+
+fetch_nhl_data <- function(season, game_type) {
+  url <- paste0("https://api.nhle.com/stats/rest/en/team/summary?limit=100&cayenneExp=seasonId=", season, "%20and%20gameTypeId=", game_type)
+  resp <- GET(url)
+  if (status_code(resp) == 200) {
+    fromJSON(content(resp, "text", encoding = "UTF-8"))$data
+  } else { return(NULL) }
+}
+
+reg_stats <- map_df(seasons, function(s) {
+  data <- fetch_nhl_data(s, 2)
+  if (!is.null(data)) {
+    data %>%
+      mutate(Season = paste0(substr(s, 1, 4), "-", substr(s, 5, 8))) %>%
+      select(Team_Name = teamFullName, Season, GP = gamesPlayed, Wins = wins, Points = points,
+             Shots_For_Per_Game = shotsForPerGame, Goals_For_Per_Game = goalsForPerGame, 
+             Goals_Against_Per_Game = goalsAgainstPerGame)
+  }
+})
+
+playoff_stats <- map_df(seasons, function(s) {
+  data <- fetch_nhl_data(s, 3)
+  if (!is.null(data)) {
+    data %>%
+      mutate(Season = paste0(substr(s, 1, 4), "-", substr(s, 5, 8))) %>%
+      select(Team_Name = teamFullName, Season, Playoff_Wins = wins)
+  }
+})
+
+# 2. Web Scraping 
+wiki_url <- "https://en.wikipedia.org/wiki/List_of_National_Hockey_League_arenas"
+wiki_page <- read_html(wiki_url)
+raw_wiki <- wiki_page %>% html_node(".wikitable") %>% html_table(fill = TRUE)
+colnames(raw_wiki) <- tolower(colnames(raw_wiki))
+
+arena_df <- raw_wiki %>%
+  select(team, capacity) %>%
+  mutate(
+    # Montreal join since the accent is in place
+    Team_Name = trimws(gsub("\\[.*?\\]", "", team)),
+    Team_Name = ifelse(grepl("Montr", Team_Name), "Montreal Canadiens", Team_Name),
+    Arena_Capacity = as.numeric(gsub(",", "", capacity))
+  ) %>%
+  select(Team_Name, Arena_Capacity)
+
+# 3. Logo Metadata
+all_logo_cols <- colnames(hockeyR::team_logos_colors)
+name_col <- all_logo_cols[grepl("team_name|team_full_name", all_logo_cols, ignore.case = TRUE)][1]
+
+logo_data <- hockeyR::team_logos_colors %>%
+  select(Join_Name = all_of(name_col), team_logo_espn) %>%
+  mutate(Join_Name = ifelse(grepl("Montr", Join_Name), "Montreal Canadiens", Join_Name))
+
+# 4. Drop the Expansion Teams/Old Team
+teams_to_drop <- c("Vegas Golden Knights", "Utah Mammoth", "Utah Hockey Club", "Arizona Coyotes", "Seattle Kraken")
+
+tableau_output <- reg_stats %>%
+  left_join(playoff_stats, by = c("Team_Name", "Season")) %>%
+  # Standardize Montreal
+  mutate(Team_Name = ifelse(grepl("Montr", Team_Name), "Montreal Canadiens", Team_Name)) %>%
+  left_join(arena_df, by = "Team_Name") %>%
+  filter(!Team_Name %in% teams_to_drop) %>%
+  mutate(Playoff_Wins = ifelse(is.na(Playoff_Wins), 0, Playoff_Wins))
+
+# Export the CSV file to working directory
+write.csv(tableau_output, "NHL10yrFinalAdvancedStats.csv", row.names = FALSE)
+
+```
+
+
+
+# Step 2 - Data Visualizations Using Package
+### Shot Volume vs. Playoff Wins
+
+```{r}
+
+# Collapse the 10-year data into team averages for the plot
+plot_data_clean <- tableau_output %>%
+  group_by(Team_Name) %>%
+  summarise(
+    Avg_Shots_For = mean(Shots_For_Per_Game, na.rm = TRUE),
+    Avg_Playoff_Wins = mean(Playoff_Wins, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+# Find the hockeyR
+all_cols <- colnames(hockeyR::team_logos_colors)
+name_col_ref <- all_cols[grepl("team_name|team_full_name", all_cols, ignore.case = TRUE)][1]
+
+logos <- hockeyR::team_logos_colors %>%
+  filter(status == "active") %>%
+  select(Join_Name = all_of(name_col_ref), team_logo_espn) %>%
+  mutate(Join_Name = ifelse(grepl("Montr", Join_Name), "Montreal Canadiens", Join_Name))
+
+# Join stats with logos
+final_plot_df <- plot_data_clean %>%
+  inner_join(logos, by = c("Team_Name" = "Join_Name"))
+
+# Generate the Graph
+ggplot(final_plot_df, aes(x = Avg_Shots_For, y = Avg_Playoff_Wins)) +
+  # Add trend line
+  geom_smooth(method = "lm", color = "black", linetype = "dashed", se = FALSE, alpha = 0.4) +
+  
+  # Add Logos
+  ggpath::geom_from_path(aes(path = team_logo_espn), width = 0.05) +
+  
+  # Change Scales
+  scale_x_continuous(expand = expansion(mult = 0.15)) + 
+  scale_y_continuous(expand = expansion(mult = 0.15)) +
+  coord_cartesian(clip = "off") +
+  
+  # Formatting and Labels
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Shot Volume vs. Postseason Success",
+    subtitle = "10-Year Average (2014-2023) | Regular Season Shots vs. Playoff Wins",
+    x = "Avg Shots For Per Game",
+    y = "Avg Playoff Wins Per Season",
+    caption = "Data: NHL API & Wikipedia | Logos: hockeyR"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.margin = margin(25, 25, 25, 25), 
+    panel.grid.minor = element_blank()
+  )
+
+# Export
+ggsave("ShotVolPlayoffSuccess.png", width = 16, height = 8, dpi = 1000)
+
+```
+
+
+### Goals For vs. Playoff Wins Visualization
+
+```{r}
+
+# Data frame
+final_gf_plot_df <- tableau_output %>%
+  group_by(Team_Name) %>%
+  summarise(
+    Avg_GF_Per_Game = mean(Goals_For_Per_Game, na.rm = TRUE),
+    Avg_Playoff_Wins = mean(Playoff_Wins, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  # Join with logos
+  inner_join(logos, by = c("Team_Name" = "Join_Name"))
+
+
+ggplot(final_gf_plot_df, aes(x = Avg_GF_Per_Game, y = Avg_Playoff_Wins)) +
+  geom_smooth(method = "lm", color = "black", linetype = "dashed", se = FALSE, alpha = 0.4) +
+  
+  # Team logos
+  ggpath::geom_from_path(aes(path = team_logo_espn), width = 0.05) +
+  
+  # Scale
+  scale_x_continuous(expand = expansion(mult = 0.15)) + 
+  scale_y_continuous(expand = expansion(mult = 0.15)) +
+  coord_cartesian(clip = "off") +
+  
+  # Formatting and labels
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Offensive Production vs. Playoff Success",
+    subtitle = "10-Year Average (2014-2023) | Goals For vs. Playoff Wins",
+    x = "Avg Goals For Per Game",
+    y = "Avg Playoff Wins Per Season",
+    caption = "Data: NHL API | Logos: hockeyR"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.margin = margin(25, 25, 25, 25), 
+    panel.grid.minor = element_blank()
+  )
+
+
+# Export
+ggsave("OffensePlayoffSuccess.png", width = 16, height = 8, dpi = 1000)
+
+
+
+```
+
+
+### Goals Against vs. Playoff Wins Visualization
+
+```{r}
+
+# Join and Playoff/GA per Game
+final_ga_plot_df <- tableau_output %>%
+  group_by(Team_Name) %>%
+  summarise(
+    Avg_GA_Per_Game = mean(Goals_Against_Per_Game, na.rm = TRUE),
+    Avg_Playoff_Wins = mean(Playoff_Wins, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  inner_join(logos, by = c("Team_Name" = "Join_Name"))
+
+# Plot
+ggplot(final_ga_plot_df, aes(x = Avg_GA_Per_Game, y = Avg_Playoff_Wins)) +
+  geom_smooth(method = "lm", color = "black", linetype = "dashed", se = FALSE, alpha = 0.4) +
+  
+  # Team Logos
+  ggpath::geom_from_path(aes(path = team_logo_espn), width = 0.05) +
+  
+  # Scale/format 
+  scale_x_continuous(expand = expansion(mult = 0.15)) + 
+  scale_y_continuous(expand = expansion(mult = 0.15)) +
+  coord_cartesian(clip = "off") +
+  
+  # Formatting and labels
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Defense vs. Playoff Success",
+    subtitle = "10-Year Average (2014-2023) | Goals Against vs. Playoff Wins",
+    x = "Avg Goals Against Per Game",
+    y = "Avg Playoff Wins Per Season",
+    caption = "Data: NHL API | Logos: hockeyR"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.margin = margin(25, 25, 25, 25), 
+    panel.grid.minor = element_blank()
+  )
+
+
+# Export
+ggsave("DefensePlayoffSuccess.png", width = 16, height = 8, dpi = 1000)
+
+
+
+```
+
+
+
+### Playoff Wins Total by Team Visualization
+
+```{r}
+
+# Aggregate for TOTAL wins
+playoff_total_data <- tableau_output %>%
+  group_by(Team_Name) %>%
+  summarise(Total_Playoff_Wins = sum(Playoff_Wins, na.rm = TRUE)) %>%
+  ungroup() %>%
+  inner_join(logos, by = c("Team_Name" = "Join_Name")) %>%
+  # Sort teams by Total Wins (Highest on the left)
+  mutate(Team_Name = reorder(Team_Name, -Total_Playoff_Wins))
+
+# --- 2. THE PLOT ---
+ggplot(playoff_total_data, aes(x = Team_Name, y = Total_Playoff_Wins)) +
+  # Create the vertical bars
+  geom_col(fill = "#00205B", alpha = 0.85, width = 0.7) +
+  
+  # PLACE LOGOS ON X-AXIS
+  ggpath::geom_from_path(aes(path = team_logo_espn, y = -3), width = 0.03) +
+  coord_cartesian(clip = "off") + 
+  
+  # Adjust y-scale to give a little buffer at the bottom
+  scale_y_continuous(expand = expansion(mult = c(0.1, 0.1))) + 
+  
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Total Postseason Wins (2014-2023)",
+    subtitle = "Ranked by cumulative franchise success",
+    x = NULL, 
+    y = "Total Playoff Wins",
+    caption = "Data Source: NHL API"
+  ) +
+  theme(
+    # Remove the standard text labels
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    
+    plot.title = element_text(face = "bold", size = 18),
+    plot.margin = margin(20, 20, 80, 20) 
+  )
+
+# Export
+ggsave("TotalPostSeasonWins.png", width = 16, height = 8, dpi = 1000)
+
+
+```
+
+
