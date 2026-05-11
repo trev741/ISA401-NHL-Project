@@ -11,11 +11,9 @@
 
 ### Deliverables
 
-1. GitHub Repository: https://github.com/trev741/ISA401-NHL-Project
+1. Tableau Public Dashboard: https://public.tableau.com/app/profile/trevor.leonard/viz/ISA401FinalTableau/NHLAnalyticsStoryboard-ISA401
 
-2. Tableau Public Dashboard: https://public.tableau.com/app/profile/trevor.leonard/viz/ISA401FinalTableau/NHLAnalyticsStoryboard-ISA401
-
-3. Technical Presentation: https://youtu.be/eQH_RjyFNWQ
+2. Technical Presentation: https://youtu.be/eQH_RjyFNWQ
 
 ---
 
@@ -23,7 +21,7 @@
 
 | Field | Description |
 |-------|-------------|
-| `Team_Name` | The full name of the NHL teams including where they're from (Anaheim) and the team name (Ducks) |
+| `Team_Name` | The full name of the NHL teams including where they're from (ex. Anaheim) and the team name (ex. Ducks) |
 | `Season` | The years in which the season took place. For example a season starting in 2017 would be 2017 - 2018 |
 | `GP` | The amount of games played with shortened season in 2019 - 2020 and 2020 - 2021 |
 | `Wins` | How many wins an NHL team has in a 82 game season with less games in 2019-2020 & 2020-2021. 
